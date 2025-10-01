@@ -3,14 +3,14 @@
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
-const Page = () => {
+const LoginPage: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -32,31 +32,28 @@ const Page = () => {
           const data = await res.json();
           if (data?.error) message += ` – ${data.error}`;
         } catch {
-          // fallback if response isn't JSON
           const text = await res.text();
           if (text) message += ` – ${text}`;
         }
         setError(message);
-        setLoading(false);
         return;
       }
 
       const token = await res.text();
-      if (!token || typeof token !== "string") {
+      if (!token) {
         setError("Login succeeded but token not found.");
-        setLoading(false);
         return;
       }
 
       localStorage.setItem("rb01_jwt", token);
-      alert("login successfull");
       router.push("/");
-    } catch (error: any) {
-      setError(error?.message ?? "Unknown error");
+    } catch (err: unknown) {
+      const e = err as Error;
+      setError(e?.message ?? "Unknown error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500">
@@ -95,4 +92,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default LoginPage;
