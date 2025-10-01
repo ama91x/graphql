@@ -1,4 +1,7 @@
-export async function graphqlFetch(query: string, variables?: any) {
+export async function graphqlFetch(
+  query: string,
+  variables?: Record<string, unknown>
+) {
   let token = localStorage.getItem("rb01_jwt");
   if (!token) throw new Error("No JWT found, please login.");
 
