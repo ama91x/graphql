@@ -8,6 +8,11 @@ type Skill = {
   totalAmount: number;
 };
 
+type Transaction = {
+  type: string;
+  amount: number;
+};
+
 const SkillSpiderGraph: React.FC = () => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,15 +32,15 @@ const SkillSpiderGraph: React.FC = () => {
         }
       `;
       try {
-        const data = await graphqlFetch(query);
-        const transactions = data.transaction;
+        const data: { transaction: Transaction[] } = await graphqlFetch(query);
+        const transactions = data.transaction || [];
 
         const summedSkills: Record<string, number> = {};
-        transactions.forEach(({ type, amount }: any) => {
+        transactions.forEach(({ type, amount }) => {
           summedSkills[type] = (summedSkills[type] || 0) + amount;
         });
 
-        const topSkills = Object.entries(summedSkills)
+        const topSkills: Skill[] = Object.entries(summedSkills)
           .map(([type, totalAmount]) => ({ type, totalAmount }))
           .sort((a, b) => b.totalAmount - a.totalAmount)
           .slice(0, 6);
@@ -62,7 +67,6 @@ const SkillSpiderGraph: React.FC = () => {
   const numAxes = skills.length;
   const maxAmount = Math.max(...skills.map((s) => s.totalAmount));
 
-  // Generate points for polygon
   const points = skills
     .map((s, i) => {
       const angle = (i / numAxes) * 2 * Math.PI - Math.PI / 2;
@@ -73,7 +77,6 @@ const SkillSpiderGraph: React.FC = () => {
     })
     .join(" ");
 
-  // Axis lines
   const axes = skills.map((s, i) => {
     const angle = (i / numAxes) * 2 * Math.PI - Math.PI / 2;
     const x = center + radius * Math.cos(angle);
@@ -91,7 +94,6 @@ const SkillSpiderGraph: React.FC = () => {
     );
   });
 
-  // Labels
   const labels = skills.map((s, i) => {
     const angle = (i / numAxes) * 2 * Math.PI - Math.PI / 2;
     const x = center + (radius + 25) * Math.cos(angle);
@@ -103,7 +105,7 @@ const SkillSpiderGraph: React.FC = () => {
         y={y}
         textAnchor={x > center ? "start" : x < center ? "end" : "middle"}
         alignmentBaseline="middle"
-        fontSize="12"
+        fontSize={12}
         className="fill-gray-700 font-semibold"
       >
         {s.type.replace("skill_", "")}
@@ -111,8 +113,7 @@ const SkillSpiderGraph: React.FC = () => {
     );
   });
 
-  // Concentric background lines
-  const levels = 5; // number of background rings
+  const levels = 5;
   const backgroundRings = Array.from({ length: levels }, (_, i) => {
     const r = ((i + 1) / levels) * radius;
     const ringPoints = skills
@@ -156,7 +157,6 @@ const SkillSpiderGraph: React.FC = () => {
           </linearGradient>
         </defs>
 
-        {/* Hover circles */}
         {skills.map((s, i) => {
           const angle = (i / numAxes) * 2 * Math.PI - Math.PI / 2;
           const r = (s.totalAmount / maxAmount) * radius;
@@ -176,7 +176,6 @@ const SkillSpiderGraph: React.FC = () => {
           );
         })}
 
-        {/* Tooltip */}
         {hoveredIndex !== null && (
           <text
             x={center}

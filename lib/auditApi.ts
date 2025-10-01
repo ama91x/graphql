@@ -2,7 +2,28 @@
 
 import { graphqlFetch } from "./graphql";
 
-export async function fetchAuditsReceived(userId: number) {
+interface Audit {
+  grade: number | null;
+}
+
+interface Transaction {
+  id: number;
+  amount: number;
+  createdAt: string;
+}
+
+interface TransactionAggregate {
+  aggregate: {
+    sum: { amount: number | null };
+  };
+}
+
+function extractGrades(audits: Audit[]): number[] {
+  return audits
+    .map((a) => a.grade)
+    .filter((g): g is number => g !== null && !isNaN(g));
+}
+export async function fetchAuditsReceived(userId: number): Promise<number[]> {
   const query = `
     query getAudits($auditorId: Int!) {
       auditsReceived: audit(where: { auditorId: { _neq: $auditorId } }) {
@@ -10,13 +31,13 @@ export async function fetchAuditsReceived(userId: number) {
       }
     }
   `;
-  const data = await graphqlFetch(query, { auditorId: userId });
-  return data.auditsReceived
-    .map((item: any) => item.grade)
-    .filter((grade: any) => grade !== null && !isNaN(grade));
+  const data: { auditsReceived: Audit[] } = await graphqlFetch(query, {
+    auditorId: userId,
+  });
+  return extractGrades(data.auditsReceived);
 }
 
-export async function fetchAuditsDone(userId: number) {
+export async function fetchAuditsDone(userId: number): Promise<number[]> {
   const query = `
     query getAudits($auditorId: Int!) {
       auditsDone: audit(where: { auditorId: { _eq: $auditorId } }) {
@@ -24,13 +45,13 @@ export async function fetchAuditsDone(userId: number) {
       }
     }
   `;
-  const data = await graphqlFetch(query, { auditorId: userId });
-  return data.auditsDone
-    .map((item: any) => item.grade)
-    .filter((grade: any) => grade !== null && !isNaN(grade));
+  const data: { auditsDone: Audit[] } = await graphqlFetch(query, {
+    auditorId: userId,
+  });
+  return extractGrades(data.auditsDone);
 }
 
-export async function fetchXpUp(userId: number) {
+export async function fetchXpUp(userId: number): Promise<number> {
   const query = `
     query getXp($auditorId: Int!) {
       xpUp: transaction_aggregate(
@@ -42,11 +63,13 @@ export async function fetchXpUp(userId: number) {
       }
     }
   `;
-  const data = await graphqlFetch(query, { auditorId: userId });
-  return data.xpUp.aggregate.sum.amount || 0;
+  const data: { xpUp: TransactionAggregate } = await graphqlFetch(query, {
+    auditorId: userId,
+  });
+  return data.xpUp.aggregate.sum.amount ?? 0;
 }
 
-export async function fetchXpDown(userId: number) {
+export async function fetchXpDown(userId: number): Promise<number> {
   const query = `
     query getXp($auditorId: Int!) {
       xpDown: transaction_aggregate(
@@ -58,21 +81,21 @@ export async function fetchXpDown(userId: number) {
       }
     }
   `;
-  const data = await graphqlFetch(query, { auditorId: userId });
-  return data.xpDown.aggregate.sum.amount || 0;
+  const data: { xpDown: TransactionAggregate } = await graphqlFetch(query, {
+    auditorId: userId,
+  });
+  return data.xpDown.aggregate.sum.amount ?? 0;
 }
 
-export async function calculateXpRatio(userId: number) {
-  const xpUp = Number(await fetchXpUp(userId));
-  const xpDown = Number(await fetchXpDown(userId));
-
+export async function calculateXpRatio(userId: number): Promise<{
+  xpUp: number;
+  xpDown: number;
+  ratio: string;
+}> {
+  const xpUp = await fetchXpUp(userId);
+  const xpDown = await fetchXpDown(userId);
   const ratio = xpDown === 0 ? xpUp : xpUp / xpDown;
-
-  return {
-    xpUp,
-    xpDown,
-    ratio: ratio.toFixed(1),
-  };
+  return { xpUp, xpDown, ratio: ratio.toFixed(1) };
 }
 
 export async function fetchXpPerMonth(): Promise<
@@ -93,10 +116,8 @@ export async function fetchXpPerMonth(): Promise<
       }
     }
   `;
-  const data = await graphqlFetch(query);
-
-  const transactions: { id: number; amount: number; createdAt: string }[] =
-    data.transaction || [];
+  const data: { transaction: Transaction[] } = await graphqlFetch(query);
+  const transactions = data.transaction || [];
 
   const xpPerMonth = transactions.reduce<Record<string, number>>((acc, txn) => {
     const date = new Date(txn.createdAt);
@@ -108,20 +129,17 @@ export async function fetchXpPerMonth(): Promise<
   return Object.entries(xpPerMonth).map(([date, xp]) => ({ date, xp }));
 }
 
-export async function fetchTotalXp(userId: number) {
-  const xpUp = Number(await fetchXpUp(userId));
-  const xpDown = Number(await fetchXpDown(userId));
-
+export async function fetchTotalXp(userId: number): Promise<number> {
+  const xpUp = await fetchXpUp(userId);
+  const xpDown = await fetchXpDown(userId);
   const xpModule = (await fetchXpPerMonth()).reduce(
     (sum, txn) => sum + txn.xp,
     0
   );
-
-  const totalXp = xpUp - xpDown + xpModule;
-
-  return totalXp;
+  return xpUp - xpDown + xpModule;
 }
-export function formatXp(xp: number) {
+
+export function formatXp(xp: number): string {
   if (xp >= 1_000_000) return (xp / 1_000).toFixed(0) + "k";
   if (xp >= 1_000) return (xp / 1_000).toFixed(1) + "k";
   return xp.toString();

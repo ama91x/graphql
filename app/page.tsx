@@ -52,9 +52,10 @@ export default function Home() {
 
         const currentUser = userData.user[0];
         setUser(currentUser);
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const e = err as Error;
         console.error(err);
-        setError(err.message || "Failed to load profile data");
+        setError(e.message || "Failed to load profile data");
       } finally {
         setLoading(false);
       }
