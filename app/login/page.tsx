@@ -12,7 +12,6 @@ const LoginPage: React.FC = () => {
   const token = localStorage.getItem("rb01_jwt");
 
   useEffect(() => {
-    const token = localStorage.getItem("rb01_jwt");
     if (token) {
       router.push("/");
       return;
