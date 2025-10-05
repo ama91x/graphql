@@ -9,6 +9,16 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("rb01_jwt");
+
+  useEffect(() => {
+    const token = localStorage.getItem("rb01_jwt");
+    if (token) {
+      router.push("/");
+      return;
+    }
+
+  },[token])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
