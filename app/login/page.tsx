@@ -15,7 +15,7 @@ const LoginPage: React.FC = () => {
     if (token) {
       router.push("/");
     }
-  }, [router]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
