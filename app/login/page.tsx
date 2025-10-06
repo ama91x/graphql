@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState , useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -9,13 +9,13 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const token = localStorage.getItem("rb01_jwt");
 
+  useEffect(() => {
+    const token = localStorage.getItem("rb01_jwt");
     if (token) {
       router.push("/");
-      return;
     }
-
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
