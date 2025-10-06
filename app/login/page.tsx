@@ -11,13 +11,11 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("rb01_jwt");
 
-  useEffect(() => {
     if (token) {
       router.push("/");
       return;
     }
 
-  },[token])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
